@@ -3,6 +3,15 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "license": "BUSL-1.1",
+  "author": "Emp0 <tools@emp0.com>",
+  "description": "Free online Excel to JSON converter. Convert Excel (.xlsx, .xls) and CSV files to JSON format instantly.",
+  "keywords": ["excel", "json", "converter", "csv", "xlsx", "xls", "file-converter"],
+  "homepage": "https://emp0.com/excel-to-json-converter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jharilela/excel-to-json-converter.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

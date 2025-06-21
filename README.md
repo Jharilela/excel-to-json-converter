@@ -178,7 +178,23 @@ This application works in all modern browsers that support:
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the Business Source License 1.1 (BUSL-1.1). 
+
+### License Details:
+- **License**: Business Source License 1.1 (Permanent)
+- **Commercial Use**: Requires a commercial license for production use
+- **Non-Commercial Use**: Free for personal, educational, and non-commercial use
+- **Attribution**: Must include copyright notice and license terms
+
+### What this means:
+- **Commercial Use**: Requires a commercial license for production use
+- **Non-Commercial Use**: Free for personal, educational, and non-commercial use
+- **Permanent License**: This license will remain in effect permanently
+- **Attribution**: Must include copyright notice and license terms
+
+For commercial use or questions about licensing, please contact [tools@emp0.com](mailto:tools@emp0.com).
+
+Full license text available in the [LICENSE](LICENSE) file.
 
 ## 🆘 Support
 
