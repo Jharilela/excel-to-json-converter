@@ -14,6 +14,13 @@ body {
   background: linear-gradient(135deg, #217346 0%, #1e6b3d 100%);
   min-height: 100vh;
   color: #333;
+  /* Force light theme */
+  color-scheme: light;
+}
+
+/* Force light theme and white backgrounds */
+html {
+  color-scheme: light;
 }
 
 #root {
@@ -25,15 +32,17 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, #217346 0%, #1e6b3d 100%);
 }
 
 /* Header */
 .app-header {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(10px);
   padding: 2rem 0;
   text-align: center;
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .header-content {
@@ -79,17 +88,19 @@ body {
   margin: 0 auto;
   padding: 2rem;
   width: 100%;
+  background: transparent;
 }
 
 /* Sections */
 section {
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff !important;
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #333 !important;
 }
 
 section h2 {
@@ -593,12 +604,35 @@ section h2 {
 
 /* Responsive design */
 @media (max-width: 768px) {
+  /* Force light theme on mobile */
+  html {
+    color-scheme: light !important;
+  }
+  
+  body {
+    color-scheme: light !important;
+    background: linear-gradient(135deg, #217346 0%, #1e6b3d 100%) !important;
+  }
+  
+  .app {
+    background: linear-gradient(135deg, #217346 0%, #1e6b3d 100%) !important;
+  }
+  
   .app-main {
     padding: 1rem;
+    background: transparent !important;
   }
   
   section {
     padding: 1.5rem;
+    background: #ffffff !important;
+    color: #333 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  .app-header {
+    background: #ffffff !important;
+    color: #333 !important;
   }
   
   .header-content {
@@ -614,10 +648,16 @@ section h2 {
 
   .header-text {
     text-align: center;
+    color: #333 !important;
   }
   
   .app-header h1 {
     font-size: 2rem;
+    color: #333 !important;
+  }
+  
+  .app-header p {
+    color: #666 !important;
   }
   
   .settings-grid {
@@ -628,10 +668,12 @@ section h2 {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+    color: #333 !important;
   }
   
   .setting-item label {
     min-width: auto;
+    color: #333 !important;
   }
   
   .download-section {
@@ -660,6 +702,8 @@ section h2 {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+    background: rgba(33, 115, 70, 0.1) !important;
+    color: #333 !important;
   }
 
   .file-info {
@@ -688,41 +732,108 @@ section h2 {
   .footer-link-card {
     padding: 0.75rem;
     gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #333 !important;
   }
 
   .footer-link-title {
     font-size: 0.85rem;
+    color: #333 !important;
   }
 
   .footer-link-desc {
     font-size: 0.75rem;
+    color: #666 !important;
   }
 
   .upload-excel-icon {
     width: 60px;
     height: 60px;
   }
+  
+  /* Force white backgrounds for all content areas */
+  .upload-area {
+    background: rgba(33, 115, 70, 0.05) !important;
+    color: #333 !important;
+  }
+  
+  .upload-info p {
+    color: #666 !important;
+  }
+  
+  .upload-info p:first-of-type {
+    color: #333 !important;
+  }
+  
+  .file-list {
+    background: rgba(33, 115, 70, 0.1) !important;
+    color: #333 !important;
+  }
+  
+  .file-name {
+    color: #333 !important;
+  }
+  
+  .file-size {
+    color: #666 !important;
+  }
+  
+  .error-message {
+    background: rgba(255, 107, 107, 0.1) !important;
+    color: #d32f2f !important;
+  }
+  
+  .preview-section h4 {
+    color: #333 !important;
+  }
+  
+  .preview-section pre {
+    background: #f5f5f5 !important;
+    color: #333 !important;
+  }
 }
 
 @media (max-width: 480px) {
+  /* Force light theme on small mobile */
+  html {
+    color-scheme: light !important;
+  }
+  
+  body {
+    color-scheme: light !important;
+    background: linear-gradient(135deg, #217346 0%, #1e6b3d 100%) !important;
+  }
+  
+  .app {
+    background: linear-gradient(135deg, #217346 0%, #1e6b3d 100%) !important;
+  }
+  
   .app-header {
     padding: 1.5rem 0;
+    background: #ffffff !important;
+    color: #333 !important;
   }
   
   .app-header h1 {
     font-size: 1.75rem;
+    color: #333 !important;
   }
   
   .app-header p {
     font-size: 1rem;
+    color: #666 !important;
   }
   
   section {
     padding: 1rem;
+    background: #ffffff !important;
+    color: #333 !important;
   }
   
   .upload-area {
     padding: 1.5rem;
+    background: rgba(33, 115, 70, 0.05) !important;
+    color: #333 !important;
   }
 
   .footer-content {
@@ -733,5 +844,43 @@ section h2 {
   .footer-link-card {
     padding: 1rem;
     gap: 1rem;
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #333 !important;
+  }
+  
+  /* Force white backgrounds for all content areas */
+  .upload-info p {
+    color: #666 !important;
+  }
+  
+  .upload-info p:first-of-type {
+    color: #333 !important;
+  }
+  
+  .file-list {
+    background: rgba(33, 115, 70, 0.1) !important;
+    color: #333 !important;
+  }
+  
+  .file-name {
+    color: #333 !important;
+  }
+  
+  .file-size {
+    color: #666 !important;
+  }
+  
+  .error-message {
+    background: rgba(255, 107, 107, 0.1) !important;
+    color: #d32f2f !important;
+  }
+  
+  .preview-section h4 {
+    color: #333 !important;
+  }
+  
+  .preview-section pre {
+    background: #f5f5f5 !important;
+    color: #333 !important;
   }
 }
