@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://emp0.com/excel-to-json-converter/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1 

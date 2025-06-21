@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
 import { saveAs } from 'file-saver'
 import excelLogo from '/excel.svg'
-import emp0Logo from '/emp0.svg'
+import emp0Logo from '/emp0.png'
+import { useAnalytics } from './hooks/useAnalytics'
 import './App.css'
 
 function App() {
@@ -18,30 +19,64 @@ function App() {
   const [error, setError] = useState(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef(null)
+  const { trackFileUpload, trackFileConversion, trackDownload, trackError, trackPageView, trackEvent } = useAnalytics()
 
   const MAX_FILE_SIZE = 1024 * 1024 * 1024 // 1GB
 
+  // Track page view on component mount
+  useEffect(() => {
+    trackPageView('Excel to JSON Converter')
+  }, [trackPageView])
+
+  // Debug files state changes
+  useEffect(() => {
+    console.log('Files state changed:', files.length, 'files')
+    files.forEach((file, index) => {
+      console.log(`File ${index}:`, file.name, file.size)
+    })
+  }, [files])
+
   const validateAndSetFiles = (selectedFiles) => {
+    console.log('Validating files:', selectedFiles.length)
+    
     const validFiles = selectedFiles.filter(file => {
+      console.log('Checking file:', file.name, 'size:', file.size, 'max:', MAX_FILE_SIZE)
       if (file.size > MAX_FILE_SIZE) {
-        setError(`File ${file.name} is too large. Maximum size is 1GB.`)
+        const errorMsg = `File ${file.name} is too large. Maximum size is 1GB.`
+        console.log('File too large:', errorMsg)
+        setError(errorMsg)
+        trackError('file_too_large', errorMsg)
         return false
       }
       return true
     })
 
+    console.log('Valid files after filtering:', validFiles.length)
+
     if (validFiles.length === 0) {
-      setError('No valid files selected.')
+      const errorMsg = 'No valid files selected.'
+      console.log('No valid files:', errorMsg)
+      setError(errorMsg)
+      trackError('no_valid_files', errorMsg)
       return
     }
 
-    setFiles(validFiles)
+    // Track file uploads
+    validFiles.forEach(file => {
+      const fileType = file.name.toLowerCase().split('.').pop()
+      trackFileUpload(fileType, file.size)
+    })
+
+    console.log('Setting files state with:', validFiles.length, 'files')
+    setFiles(prevFiles => [...prevFiles, ...validFiles])
     setError(null)
   }
 
   const handleFileSelect = (event) => {
-    const selectedFiles = Array.from(event.target.files)
-    validateAndSetFiles(selectedFiles)
+    const selectedFiles = Array.from(event.target.files);
+    validateAndSetFiles(selectedFiles);
+    // Reset the input value so the same file can be selected again
+    event.target.value = '';
   }
 
   const handleDragOver = (event) => {
@@ -59,11 +94,15 @@ function App() {
     setIsDragOver(false)
     
     const droppedFiles = Array.from(event.dataTransfer.files)
+    console.log('Dropped files:', droppedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })))
     validateAndSetFiles(droppedFiles)
   }
 
-  const handleUploadAreaClick = () => {
-    fileInputRef.current?.click()
+  const handleUploadAreaClick = (event) => {
+    // Only trigger if the click is NOT on the file input itself
+    if (event.target === event.currentTarget) {
+      fileInputRef.current?.click();
+    }
   }
 
   const removeFile = (indexToRemove) => {
@@ -145,8 +184,10 @@ function App() {
       }
 
       setConvertedData(allData)
+      trackFileConversion(files.length, settings.outputFormat)
     } catch (error) {
       setError(`Error processing files: ${error.message}`)
+      trackError('processing_error', error.message)
     } finally {
       setIsProcessing(false)
     }
@@ -160,13 +201,16 @@ function App() {
     
     if (settings.outputFormat === 'single') {
       saveAs(blob, 'converted_data.json')
+      trackDownload(settings.outputFormat, 1)
     } else {
       // Download multiple files
+      const fileCount = Object.keys(convertedData).length
       Object.entries(convertedData).forEach(([sheetName, data]) => {
         const sheetJsonString = JSON.stringify(data, null, 2)
         const sheetBlob = new Blob([sheetJsonString], { type: 'application/json' })
         saveAs(sheetBlob, `${sheetName}.json`)
       })
+      trackDownload(settings.outputFormat, fileCount)
     }
   }
 
@@ -193,6 +237,7 @@ function App() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
+    trackEvent('clear_all', 'User Action', 'clear_all')
   }
 
   return (
@@ -202,15 +247,47 @@ function App() {
           <img src={excelLogo} alt="Excel Logo" className="excel-logo" />
           <div className="header-text">
             <h1>Excel to JSON Converter</h1>
-            <p>Convert Excel and CSV files to JSON format in your browser</p>
+            <p>Convert Excel (.xlsx, .xls) and CSV files to JSON format instantly. Free online converter for large files up to 1GB.</p>
           </div>
         </div>
       </header>
 
       <main className="app-main">
+        {/* SEO Content Section */}
+        <section className="seo-content" style={{display: 'none'}}>
+          <h2>Excel to JSON Converter - Free Online Tool</h2>
+          <p>Convert Excel files (.xlsx, .xls) and CSV files to JSON format with our free online converter. This powerful tool can handle large files up to 1GB and works entirely in your browser. No registration required, no data sent to servers - your files stay private.</p>
+          
+          <h3>Key Features:</h3>
+          <ul>
+            <li><strong>Excel to JSON:</strong> Convert .xlsx and .xls files to JSON format</li>
+            <li><strong>CSV to JSON:</strong> Convert CSV files to JSON format</li>
+            <li><strong>Large File Support:</strong> Handle files up to 1GB in size</li>
+            <li><strong>Multiple Files:</strong> Upload and convert multiple files at once</li>
+            <li><strong>Drag & Drop:</strong> Easy file upload with drag and drop interface</li>
+            <li><strong>Privacy First:</strong> All processing happens in your browser</li>
+            <li><strong>No Registration:</strong> Use immediately without signing up</li>
+          </ul>
+          
+          <h3>How to Convert Excel to JSON:</h3>
+          <ol>
+            <li>Upload your Excel (.xlsx, .xls) or CSV file using the upload area</li>
+            <li>Choose your preferred output format (single JSON file or multiple files)</li>
+            <li>Click "Convert to JSON" to process your files</li>
+            <li>Preview the converted data and download your JSON files</li>
+          </ol>
+          
+          <h3>Supported File Formats:</h3>
+          <ul>
+            <li><strong>Excel Files:</strong> .xlsx, .xls</li>
+            <li><strong>CSV Files:</strong> .csv</li>
+            <li><strong>Output Format:</strong> JSON (.json)</li>
+          </ul>
+        </section>
+
         {/* File Upload Section */}
         <section className="upload-section">
-          <h2>Upload Files</h2>
+          <h2>Upload Excel & CSV Files</h2>
           <div 
             className={`upload-area ${isDragOver ? 'drag-over' : ''}`}
             onDragOver={handleDragOver}
@@ -225,10 +302,11 @@ function App() {
               accept=".xlsx,.xls,.csv"
               onChange={handleFileSelect}
               className="file-input"
+              key="file-input"
             />
             <div className="upload-info">
               <img src={excelLogo} alt="Excel" className="upload-excel-icon" />
-              <p><strong>Click to browse</strong> or drag and drop files here</p>
+              <p><strong>Click to browse</strong> or drag and drop Excel (.xlsx, .xls) and CSV files here</p>
               <p>Supported formats: .xlsx, .xls, .csv</p>
               <p>Maximum file size: 1GB per file</p>
             </div>
@@ -265,14 +343,17 @@ function App() {
 
         {/* Settings Section */}
         <section className="settings-section">
-          <h2>Conversion Settings</h2>
+          <h2>JSON Conversion Settings</h2>
           <div className="settings-grid">
             <div className="setting-item">
               <label htmlFor="outputFormat">Output Format:</label>
               <select
                 id="outputFormat"
                 value={settings.outputFormat}
-                onChange={(e) => setSettings({...settings, outputFormat: e.target.value})}
+                onChange={(e) => {
+                  setSettings({...settings, outputFormat: e.target.value})
+                  trackEvent('setting_change', 'Settings', 'output_format', null)
+                }}
               >
                 <option value="single">Single JSON file</option>
                 <option value="multiple">Multiple JSON files (one per sheet)</option>
@@ -284,7 +365,10 @@ function App() {
                 <input
                   type="checkbox"
                   checked={settings.includeHeaders}
-                  onChange={(e) => setSettings({...settings, includeHeaders: e.target.checked})}
+                  onChange={(e) => {
+                    setSettings({...settings, includeHeaders: e.target.checked})
+                    trackEvent('setting_change', 'Settings', 'include_headers', null)
+                  }}
                 />
                 Include headers as property names
               </label>
@@ -297,7 +381,7 @@ function App() {
               disabled={files.length === 0 || isProcessing}
               className="convert-btn"
             >
-              {isProcessing ? 'Converting...' : 'Convert to JSON'}
+              {isProcessing ? 'Converting Excel to JSON...' : 'Convert Excel to JSON'}
             </button>
           </div>
         </section>
@@ -312,7 +396,7 @@ function App() {
         {/* Preview Section */}
         {convertedData && (
           <section className="preview-section">
-            <h2>Preview</h2>
+            <h2>JSON Preview</h2>
             <div className="preview-container">
               {Object.entries(getPreviewData()).map(([sheetName, preview]) => (
                 <div key={sheetName} className="sheet-preview">
@@ -337,7 +421,7 @@ function App() {
             
             <div className="download-section">
               <button onClick={downloadJSON} className="download-btn">
-                Download JSON
+                Download JSON Files
               </button>
               <button onClick={clearAll} className="clear-btn">
                 Clear All
