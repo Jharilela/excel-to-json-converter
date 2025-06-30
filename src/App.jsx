@@ -370,8 +370,8 @@ function App() {
         <div className="header-content">
           <img src={logo} alt="Logo" className="excel-logo" />
           <div className="header-text">
-            <h1>Excel to JSON Converter</h1>
-            <p>Convert Excel (.xlsx, .xls) and CSV files to JSON format instantly. Free online converter for large files up to 1GB.</p>
+            <h1>Seamless JSON, CSV & Excel Converter</h1>
+            <p>Convert between JSON, CSV, and Excel (.xlsx, .xls) formats instantly. Free, private, and supports large files up to 1GB.</p>
           </div>
         </div>
       </header>
