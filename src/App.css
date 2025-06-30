@@ -37,58 +37,149 @@ html {
 
 /* Header */
 .app-header {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
-  padding: 2rem 0;
-  text-align: center;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: #fff !important;
+  padding: 0.5rem 0;
+  text-align: left !important;
+  box-shadow: none;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .header-content {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
+  justify-content: flex-start;
+  gap: 0.75rem;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 1rem;
+  text-align: left !important;
 }
 
 .excel-logo {
-  width: 60px;
-  height: 60px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
 }
 
 .header-text {
-  text-align: left;
+  text-align: left !important;
 }
 
 .app-header h1 {
-  font-size: 2.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #217346 0%, #1e6b3d 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.5rem;
+  background: none;
+  color: #217346;
+  margin-bottom: 0.15rem;
+  text-align: left !important;
 }
 
 .app-header p {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   color: #666;
   font-weight: 400;
+  margin: 0;
+  text-align: left !important;
 }
 
 /* Main content */
 .app-main {
   flex: 1;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
   width: 100%;
   background: transparent;
+}
+
+/* Three Column Layout */
+.three-column-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0;
+}
+
+.upload-column,
+.settings-column,
+.output-column {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.upload-section,
+.settings-section,
+.preview-section,
+.empty-state {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
+  overflow-x: hidden;
+  margin: 0 0 0.5rem 0;
+  padding: 1rem 0.5rem;
+}
+
+.column {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+section h2, section h3, section h4 {
+  margin: 0 0 0.5rem 0;
+  padding: 0;
+}
+
+.file-list, .file-list-header, .file-info, .download-section, .settings-grid, .preview-container, .sheet-preview {
+  margin: 0;
+  padding: 0;
+  gap: 0.5rem;
+}
+
+/* Empty State */
+.empty-state {
+  background: #ffffff !important;
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #333 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 300px;
+}
+
+.empty-state h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.empty-state-content {
+  color: #666;
+}
+
+.empty-state-content p {
+  font-size: 1rem;
+  margin: 0;
 }
 
 /* Sections */
@@ -111,6 +202,9 @@ section h2 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  text-align: center !important;
+  justify-content: center !important;
+  width: 100%;
 }
 
 /* Upload section */
@@ -313,12 +407,14 @@ section h2 {
 .settings-grid {
   display: grid;
   gap: 1.5rem;
+  overflow-x: hidden;
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   gap: 1rem;
+  overflow-x: hidden;
 }
 
 .setting-item label {
@@ -334,12 +430,57 @@ section h2 {
   border-radius: 6px;
   font-size: 0.9rem;
   background: white;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .setting-item select:focus {
   outline: none;
   border-color: #217346;
   box-shadow: 0 0 0 3px rgba(33, 115, 70, 0.1);
+}
+
+/* Custom green checkbox styling */
+.setting-item input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #fff;
+  border: 2px solid #217346;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  margin-right: 0.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: none;
+}
+
+.setting-item input[type="checkbox"]:checked {
+  background-color: #22c55e;
+  border-color: #22c55e;
+}
+
+.setting-item input[type="checkbox"]:checked::after {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 6px;
+  height: 12px;
+  border: solid #fff;
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+
+.setting-item label {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  cursor: pointer;
 }
 
 /* Buttons */
@@ -417,8 +558,11 @@ section h2 {
 
 /* Preview section */
 .preview-container {
-  display: grid;
-  gap: 2rem;
+  overflow: auto !important;
+  max-height: 320px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box;
 }
 
 .sheet-preview {
@@ -438,6 +582,8 @@ section h2 {
 
 .preview-section {
   margin-bottom: 1.5rem;
+  overflow: unset !important;
+  max-height: unset !important;
 }
 
 .preview-section h4 {
@@ -445,6 +591,12 @@ section h2 {
   margin-bottom: 0.5rem;
   color: #555;
   font-weight: 600;
+}
+
+.preview-section pre, .preview-section table {
+  min-width: max-content !important;
+  width: 100% !important;
+  box-sizing: border-box;
 }
 
 .preview-section pre {
@@ -461,12 +613,18 @@ section h2 {
 
 /* Download section */
 .download-section {
+  margin-top: 0 !important;
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid rgba(33, 115, 70, 0.2);
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+}
+
+.download-divider {
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 /* Footer */
@@ -603,6 +761,17 @@ section h2 {
 }
 
 /* Responsive design */
+@media (max-width: 1024px) {
+  .three-column-layout {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .output-column {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 768px) {
   /* Force light theme on mobile */
   html {
@@ -622,6 +791,22 @@ section h2 {
     padding: 1rem;
     background: transparent !important;
   }
+
+  /* Three Column Layout - Stack on mobile */
+  .three-column-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .column {
+    gap: 1rem;
+  }
+
+  .upload-column,
+  .settings-column,
+  .output-column {
+    min-height: auto;
+  }
   
   section {
     padding: 1.5rem;
@@ -636,28 +821,31 @@ section h2 {
   }
   
   .header-content {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
-  }
-
-  .excel-logo {
-    width: 50px;
-    height: 50px;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.75rem !important;
+    text-align: left !important;
   }
 
   .header-text {
-    text-align: center;
-    color: #333 !important;
+    text-align: left !important;
+    align-items: flex-start !important;
   }
-  
+
+  .excel-logo {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
   .app-header h1 {
-    font-size: 2rem;
-    color: #333 !important;
+    font-size: 1.1rem !important;
+    text-align: left !important;
   }
   
   .app-header p {
-    color: #666 !important;
+    font-size: 0.85rem !important;
+    text-align: left !important;
   }
   
   .settings-grid {
@@ -794,7 +982,6 @@ section h2 {
 }
 
 @media (max-width: 480px) {
-  /* Force light theme on small mobile */
   html {
     color-scheme: light !important;
   }
@@ -809,19 +996,19 @@ section h2 {
   }
   
   .app-header {
-    padding: 1.5rem 0;
     background: #ffffff !important;
     color: #333 !important;
+    padding: 1rem 0;
   }
   
   .app-header h1 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     color: #333 !important;
   }
   
   .app-header p {
-    font-size: 1rem;
     color: #666 !important;
+    font-size: 0.9rem;
   }
   
   section {
@@ -829,7 +1016,17 @@ section h2 {
     background: #ffffff !important;
     color: #333 !important;
   }
-  
+
+  /* Three Column Layout - Stack on small mobile */
+  .three-column-layout {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .column {
+    gap: 0.75rem;
+  }
+
   .upload-area {
     padding: 1.5rem;
     background: rgba(33, 115, 70, 0.05) !important;

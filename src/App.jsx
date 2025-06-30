@@ -14,7 +14,7 @@ import { useState, useRef, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
 import { saveAs } from 'file-saver'
-import excelLogo from '/excel.svg'
+import logo from '/logo.png'
 import emp0Logo from '/emp0.png'
 import { useAnalytics } from './hooks/useAnalytics'
 import './App.css'
@@ -25,7 +25,8 @@ function App() {
   const [settings, setSettings] = useState({
     outputFormat: 'single', // 'single' or 'multiple'
     includeHeaders: true,
-    flattenNested: false
+    flattenNested: false,
+    destinationType: 'json' // 'json', 'csv', or 'excel'
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState(null)
@@ -137,9 +138,7 @@ function App() {
           const result = {}
           workbook.SheetNames.forEach(sheetName => {
             const worksheet = workbook.Sheets[sheetName]
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
-              header: settings.includeHeaders ? 1 : undefined 
-            })
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: settings.includeHeaders ? undefined : 1 })
             result[sheetName] = jsonData
           })
           
@@ -157,7 +156,7 @@ function App() {
   const processCSVFile = async (file) => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
-        header: settings.includeHeaders,
+        header: settings.includeHeaders !== false,
         complete: (results) => {
           resolve({ [file.name.replace(/\.[^/.]+$/, '')]: results.data })
         },
@@ -179,20 +178,50 @@ function App() {
 
     try {
       const allData = {}
-      
+      let jsonToConvert = null
+      let jsonFileName = ''
+      let isJsonToOther = false
+
       for (const file of files) {
         let fileData
         const fileExtension = file.name.toLowerCase().split('.').pop()
-        
+
+        // If user uploads JSON and wants CSV or Excel
+        if (fileExtension === 'json' && (settings.destinationType === 'csv' || settings.destinationType === 'excel')) {
+          const text = await file.text()
+          try {
+            jsonToConvert = JSON.parse(text)
+            jsonFileName = file.name.replace(/\.[^/.]+$/, '')
+            isJsonToOther = true
+          } catch (e) {
+            throw new Error('Invalid JSON file.')
+          }
+          break // Only support one JSON file at a time for conversion
+        }
+
         if (fileExtension === 'csv') {
           fileData = await processCSVFile(file)
-        } else if (['xlsx', 'xls'].includes(fileExtension)) {
+        } else if ([ 'xlsx', 'xls' ].includes(fileExtension)) {
           fileData = await processExcelFile(file)
+        } else if (fileExtension === 'json') {
+          // If user wants JSON as output, just parse and show preview
+          const text = await file.text()
+          try {
+            fileData = { [file.name.replace(/\.[^/.]+$/, '')]: JSON.parse(text) }
+          } catch (e) {
+            throw new Error('Invalid JSON file.')
+          }
         } else {
           throw new Error(`Unsupported file type: ${fileExtension}`)
         }
-        
         Object.assign(allData, fileData)
+      }
+
+      if (isJsonToOther) {
+        setConvertedData({ [jsonFileName]: jsonToConvert })
+        setError(null)
+        setIsProcessing(false)
+        return
       }
 
       setConvertedData(allData)
@@ -205,12 +234,60 @@ function App() {
     }
   }
 
+  function isFlatArrayOfObjects(data) {
+    return Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]);
+  }
+
   const downloadJSON = () => {
     if (!convertedData) return
 
+    // If user uploaded JSON and wants CSV or Excel
+    if (files.length === 1 && files[0].name.toLowerCase().endsWith('.json') && (settings.destinationType === 'csv' || settings.destinationType === 'excel')) {
+      const jsonFileName = files[0].name.replace(/\.[^/.]+$/, '')
+      let jsonData = convertedData[jsonFileName]
+      // Ensure jsonData is an array for conversion
+      if (!Array.isArray(jsonData)) {
+        if (typeof jsonData === 'object' && jsonData !== null) {
+          // Try to extract the first array value from the object
+          const firstArray = Object.values(jsonData).find(v => Array.isArray(v))
+          if (firstArray) {
+            jsonData = firstArray
+          } else {
+            setError('JSON data is not an array and cannot be converted to CSV/Excel.')
+            return
+          }
+        } else {
+          setError('JSON data is not an array and cannot be converted to CSV/Excel.')
+          return
+        }
+      }
+      // Check if it's a flat array of objects
+      if (!isFlatArrayOfObjects(jsonData)) {
+        setError('Cannot convert this JSON to CSV/Excel. Please upload a flat array of objects.')
+        return
+      }
+      if (settings.destinationType === 'csv') {
+        // Convert JSON to CSV
+        const csv = Papa.unparse(jsonData)
+        const blob = new Blob([csv], { type: 'text/csv' })
+        saveAs(blob, `${jsonFileName}.csv`)
+        trackDownload('csv', 1)
+      } else if (settings.destinationType === 'excel') {
+        // Convert JSON to Excel
+        const ws = XLSX.utils.json_to_sheet(jsonData)
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        saveAs(blob, `${jsonFileName}.xlsx`)
+        trackDownload('excel', 1)
+      }
+      return
+    }
+
+    // Default: JSON download
     const jsonString = JSON.stringify(convertedData, null, 2)
     const blob = new Blob([jsonString], { type: 'application/json' })
-    
     if (settings.outputFormat === 'single') {
       saveAs(blob, 'converted_data.json')
       trackDownload(settings.outputFormat, 1)
@@ -233,10 +310,9 @@ function App() {
     Object.entries(convertedData).forEach(([sheetName, data]) => {
       if (Array.isArray(data) && data.length > 0) {
         const first5 = data.slice(0, 5)
-        const last5 = data.slice(-5)
-        preview[sheetName] = { first5, last5, totalRows: data.length }
+        preview[sheetName] = { first5, totalRows: data.length }
       } else {
-        preview[sheetName] = { first5: [], last5: [], totalRows: 0 }
+        preview[sheetName] = { first5: [], totalRows: 0 }
       }
     })
     return preview
@@ -252,11 +328,47 @@ function App() {
     trackEvent('clear_all', 'User Action', 'clear_all')
   }
 
+  // Helper to render table preview
+  const renderTablePreview = (data) => {
+    if (!Array.isArray(data) || data.length === 0) return <div>No data to preview.</div>;
+    const isArrayRows = Array.isArray(data[0]);
+    let headers, rows;
+    if (isArrayRows) {
+      headers = data[0];
+      rows = data.slice(1, 6); // first 5 rows after header
+    } else {
+      headers = Object.keys(data[0]);
+      rows = data.slice(0, 5);
+    }
+    return (
+      <div style={{overflow: 'auto', maxHeight: '320px', width: '100%'}}>
+        <table style={{width: '100%', minWidth: 'max-content', borderCollapse: 'collapse'}}>
+          <thead>
+            <tr>
+              {headers.map((h, i) => (
+                <th key={i} style={{border: '1px solid #ddd', padding: '4px', background: '#f6f6f6', fontWeight: 600}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                {isArrayRows
+                  ? headers.map((_, j) => <td key={j} style={{border: '1px solid #eee', padding: '4px'}}>{row[j]}</td>)
+                  : headers.map((h, j) => <td key={j} style={{border: '1px solid #eee', padding: '4px'}}>{row[h]}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <img src={excelLogo} alt="Excel Logo" className="excel-logo" />
+          <img src={logo} alt="Logo" className="excel-logo" />
           <div className="header-text">
             <h1>Excel to JSON Converter</h1>
             <p>Convert Excel (.xlsx, .xls) and CSV files to JSON format instantly. Free online converter for large files up to 1GB.</p>
@@ -297,150 +409,183 @@ function App() {
           </ul>
         </section>
 
-        {/* File Upload Section */}
-        <section className="upload-section">
-          <h2>Upload Excel & CSV Files</h2>
-          <div 
-            className={`upload-area ${isDragOver ? 'drag-over' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={handleUploadAreaClick}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept=".xlsx,.xls,.csv"
-              onChange={handleFileSelect}
-              className="file-input"
-              key="file-input"
-            />
-            <div className="upload-info">
-              <img src={excelLogo} alt="Excel" className="upload-excel-icon" />
-              <p><strong>Click to browse</strong> or drag and drop Excel (.xlsx, .xls) and CSV files here</p>
-              <p>Supported formats: .xlsx, .xls, .csv</p>
-              <p>Maximum file size: 1GB per file</p>
-            </div>
+        {/* Three Column Layout */}
+        <div className="three-column-layout">
+          {/* Left Column - File Upload */}
+          <div className="column upload-column">
+            <section className="upload-section">
+              <h2>Upload Excel & CSV Files</h2>
+              <div 
+                className={`upload-area ${isDragOver ? 'drag-over' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={handleUploadAreaClick}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".xlsx,.xls,.csv,.json"
+                  onChange={handleFileSelect}
+                  className="file-input"
+                  key="file-input"
+                />
+                <div className="upload-info">
+                  <p><strong>Click to browse</strong> or drag and drop Excel (.xlsx, .xls), CSV, or JSON files here</p>
+                  <p>Supported formats: .xlsx, .xls, .csv, .json</p>
+                  <p>Maximum file size: 1GB per file</p>
+                </div>
+              </div>
+              
+              {files.length > 0 && (
+                <div className="file-list">
+                  <div className="file-list-header">
+                    <h3>Selected Files ({files.length})</h3>
+                    <button onClick={clearAll} className="clear-all-btn">
+                      Clear All
+                    </button>
+                  </div>
+                  <ul>
+                    {files.map((file, index) => (
+                      <li key={index}>
+                        <div className="file-info">
+                          <span className="file-name">{file.name}</span>
+                          <span className="file-size">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                        </div>
+                        <button 
+                          onClick={() => removeFile(index)} 
+                          className="remove-file-btn"
+                          title="Remove file"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
           </div>
-          
-          {files.length > 0 && (
-            <div className="file-list">
-              <div className="file-list-header">
-                <h3>Selected Files ({files.length})</h3>
-                <button onClick={clearAll} className="clear-all-btn">
-                  Clear All
+
+          {/* Middle Column - Settings */}
+          <div className="column settings-column">
+            <section className="settings-section">
+              <h2>JSON Conversion Settings</h2>
+              <div className="settings-grid">
+                <div className="setting-item">
+                  <label htmlFor="destinationType">Destination File Type:</label>
+                  <select
+                    id="destinationType"
+                    value={settings.destinationType}
+                    onChange={(e) => setSettings({...settings, destinationType: e.target.value, outputFormat: 'single'})}
+                  >
+                    <option value="json">JSON</option>
+                    <option value="csv">CSV</option>
+                    <option value="excel">Excel (XLSX)</option>
+                  </select>
+                </div>
+                <div className="setting-item">
+                  <label htmlFor="outputFormat">Output Format:</label>
+                  <select
+                    id="outputFormat"
+                    value={settings.outputFormat}
+                    onChange={(e) => {
+                      setSettings({...settings, outputFormat: e.target.value})
+                      trackEvent('setting_change', 'Settings', 'output_format', null)
+                    }}
+                  >
+                    {settings.destinationType === 'json' && (
+                      <>
+                        <option value="single">Single JSON file</option>
+                        <option value="multiple">Multiple JSON files (one per sheet)</option>
+                      </>
+                    )}
+                    {settings.destinationType === 'csv' && (
+                      <>
+                        <option value="single">Single CSV file</option>
+                        <option value="multiple">Multiple CSV files (one per sheet)</option>
+                      </>
+                    )}
+                    {settings.destinationType === 'excel' && (
+                      <>
+                        <option value="single">Single Excel file</option>
+                        <option value="multiple">Multiple Excel files (one per sheet)</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="convert-section">
+                <button
+                  onClick={convertFiles}
+                  disabled={files.length === 0 || isProcessing}
+                  className="convert-btn"
+                >
+                  {isProcessing ? 'Converting...' : 'Convert'}
                 </button>
               </div>
-              <ul>
-                {files.map((file, index) => (
-                  <li key={index}>
-                    <div className="file-info">
-                      <span className="file-name">{file.name}</span>
-                      <span className="file-size">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                    </div>
-                    <button 
-                      onClick={() => removeFile(index)} 
-                      className="remove-file-btn"
-                      title="Remove file"
-                    >
-                      ✕
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-
-        {/* Settings Section */}
-        <section className="settings-section">
-          <h2>JSON Conversion Settings</h2>
-          <div className="settings-grid">
-            <div className="setting-item">
-              <label htmlFor="outputFormat">Output Format:</label>
-              <select
-                id="outputFormat"
-                value={settings.outputFormat}
-                onChange={(e) => {
-                  setSettings({...settings, outputFormat: e.target.value})
-                  trackEvent('setting_change', 'Settings', 'output_format', null)
-                }}
-              >
-                <option value="single">Single JSON file</option>
-                <option value="multiple">Multiple JSON files (one per sheet)</option>
-              </select>
-            </div>
-            
-            <div className="setting-item">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={settings.includeHeaders}
-                  onChange={(e) => {
-                    setSettings({...settings, includeHeaders: e.target.checked})
-                    trackEvent('setting_change', 'Settings', 'include_headers', null)
-                  }}
-                />
-                Include headers as property names
-              </label>
-            </div>
+            </section>
           </div>
-          
-          <div className="convert-section">
-            <button
-              onClick={convertFiles}
-              disabled={files.length === 0 || isProcessing}
-              className="convert-btn"
-            >
-              {isProcessing ? 'Converting Excel to JSON...' : 'Convert Excel to JSON'}
-            </button>
-          </div>
-        </section>
 
-        {/* Error Display */}
-        {error && (
-          <div className="error-message">
-            <p>{error}</p>
-          </div>
-        )}
+          {/* Right Column - Output */}
+          <div className="column output-column">
+            {/* Error Display */}
+            {error && (
+              <div className="error-message">
+                <p>{error}</p>
+              </div>
+            )}
 
-        {/* Preview Section */}
-        {convertedData && (
-          <section className="preview-section">
-            <h2>JSON Preview</h2>
-            <div className="preview-container">
-              {Object.entries(getPreviewData()).map(([sheetName, preview]) => (
-                <div key={sheetName} className="sheet-preview">
-                  <h3>{sheetName} ({preview.totalRows} rows)</h3>
-                  
-                  {preview.first5.length > 0 && (
-                    <div className="preview-section">
-                      <h4>First 5 items:</h4>
-                      <pre>{JSON.stringify(preview.first5, null, 2)}</pre>
-                    </div>
-                  )}
-                  
-                  {preview.last5.length > 0 && preview.totalRows > 5 && (
-                    <div className="preview-section">
-                      <h4>Last 5 items:</h4>
-                      <pre>{JSON.stringify(preview.last5, null, 2)}</pre>
-                    </div>
-                  )}
+            {/* Preview Section */}
+            {convertedData && (
+              <section className="preview-section">
+                <div className="preview-header" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem'}}>
+                  <h2 style={{margin: 0}}>Preview</h2>
                 </div>
-              ))}
-            </div>
-            
-            <div className="download-section">
-              <button onClick={downloadJSON} className="download-btn">
-                Download JSON Files
-              </button>
-              <button onClick={clearAll} className="clear-btn">
-                Clear All
-              </button>
-            </div>
-          </section>
-        )}
+                <div className="download-section download-divider">
+                  <button onClick={downloadJSON} className="download-btn">
+                    Download {settings.destinationType === 'json' ? 'JSON' : settings.destinationType === 'csv' ? 'CSV' : 'Excel'} Files
+                  </button>
+                  <button onClick={clearAll} className="clear-btn">
+                    Clear All
+                  </button>
+                </div>
+                <div className="preview-container">
+                  {Object.entries(getPreviewData()).map(([sheetName, preview], idx, arr) => (
+                    <div key={sheetName} style={{marginBottom: idx < arr.length - 1 ? '1.5rem' : 0}}>
+                      {settings.destinationType === 'json' && preview.first5.length > 0 && (
+                        <div className="preview-section">
+                          <div style={{overflow: 'auto', maxHeight: '320px', width: '100%'}}>
+                            <pre style={{minWidth: 'max-content'}}>{JSON.stringify(preview.first5, null, 2)}</pre>
+                          </div>
+                        </div>
+                      )}
+                      {(settings.destinationType === 'csv' || settings.destinationType === 'excel') && preview.first5.length > 0 && (
+                        <div className="preview-section">
+                          <div style={{overflow: 'auto', maxHeight: '320px', width: '100%'}}>
+                            {renderTablePreview(preview.first5)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Empty State */}
+            {!convertedData && !error && (
+              <section className="empty-state">
+                <h2>Output</h2>
+                <div className="empty-state-content">
+                  <p>Upload files and convert them to see the JSON output here.</p>
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
       </main>
 
       <footer className="app-footer">

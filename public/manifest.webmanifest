@@ -1,0 +1,9 @@
+{
+  "name": "Excel to JSON Converter",
+  "short_name": "Excel2JSON",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#217346",
+  "description": "Convert Excel, CSV, and JSON files easily."
+} 
